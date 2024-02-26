@@ -1,6 +1,5 @@
 package com.mnader.library_challenge.model;
 
-import com.mnader.library_challenge.model.DTO.BookResponseDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,18 +32,5 @@ public class Book {
     }
     public Boolean thereAreCopiesInStock(){
         return this.stock > 0;
-    }
-
-    public BookResponseDTO convertToResponseDTO() {
-        return BookResponseDTO.builder()
-            .id(this.id)
-            .title(this.title)
-            .author(this.author)
-            .isbn(this.isbn)
-            .price(this.price)
-            .averageRating(this.averageRating)
-            .numberOfRatings(this.numberOfRatings)
-            .stock(this.stock)
-            .build();
     }
 }

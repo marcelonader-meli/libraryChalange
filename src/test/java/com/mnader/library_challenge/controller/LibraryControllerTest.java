@@ -1,34 +1,30 @@
 package com.mnader.library_challenge.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mnader.library_challenge.controller.exceptions.BadRequestException;
-import com.mnader.library_challenge.controller.exceptions.NotFoundException;
 import com.mnader.library_challenge.model.Book;
-import com.mnader.library_challenge.model.DTO.BookRequestDTO;
-import com.mnader.library_challenge.model.DTO.BookResponseDTO;
-import com.mnader.library_challenge.repository.BookRepository;
+import com.mnader.library_challenge.controller.DTO.BookRequestDTO;
+import com.mnader.library_challenge.controller.DTO.BookResponseDTO;
 import com.mnader.library_challenge.service.BookService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,6 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class LibraryControllerTest {
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private WebApplicationContext context;
+
     @MockBean
     private BookService bookService;
 
@@ -166,9 +166,13 @@ public class LibraryControllerTest {
 
         @Test
         public  void saveBookWithATitleWith2CharactersShouldThrowMethodArgumentNotValidException() throws Exception {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.AUTHORIZATION, "Bearer TOKEN_VALUE");
+
             mockMvc.perform(MockMvcRequestBuilders.post("/library/book")
                     .content(convertObjectToJsonFormat(bookWithTitleWith2charactersRequestDTO))
                     .contentType(MediaType.APPLICATION_JSON)
+                    .headers(headers)
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(result -> {
@@ -223,7 +227,9 @@ public class LibraryControllerTest {
         public void findBooksByTitleWithSuccess() throws Exception
         {
             List<Book> expectedBookList = List.of(bookCorrectPersisted, bookCorrectPersisted);
-            List<BookResponseDTO> bookResponseDTOList = expectedBookList.stream().map(Book::convertToResponseDTO).toList();
+            List<BookResponseDTO> bookResponseDTOList = expectedBookList.stream().map(
+                book -> new BookResponseDTO().buildResponseDtoFromEntity(book)
+            ).toList();
             when(bookService.findBooksByTitle("title")).thenReturn(expectedBookList);
 
             mockMvc.perform(MockMvcRequestBuilders

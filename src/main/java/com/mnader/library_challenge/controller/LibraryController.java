@@ -4,13 +4,15 @@ import com.mnader.library_challenge.controller.exceptions.BadRequestException;
 import com.mnader.library_challenge.controller.exceptions.NotFoundException;
 import com.mnader.library_challenge.controller.exceptions.OutOfRangeRatingException;
 import com.mnader.library_challenge.model.Book;
-import com.mnader.library_challenge.model.DTO.BookRequestDTO;
-import com.mnader.library_challenge.model.DTO.BookResponseDTO;
+import com.mnader.library_challenge.controller.DTO.BookRequestDTO;
+import com.mnader.library_challenge.controller.DTO.BookResponseDTO;
 import com.mnader.library_challenge.service.BookService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,10 +31,11 @@ public class LibraryController {
     public ResponseEntity<BookResponseDTO> addBook(
         @Valid @RequestBody BookRequestDTO bookRequestDTO
     ) throws BadRequestException {
-        Book bookEntity = bookRequestDTO.convertToEntity();
-        Book book = bookService.saveBook(bookEntity);
-        BookResponseDTO bookResponseDTO = book.convertToResponseDTO();
-        return ResponseEntity.status(HttpStatus.CREATED).body(bookResponseDTO);
+        Book book = bookService.saveBook(bookRequestDTO.convertToEntity());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+            new BookResponseDTO().buildResponseDtoFromEntity(book)
+        );
     }
 
     @GetMapping("/book/{bookTitle}")
@@ -40,7 +43,9 @@ public class LibraryController {
         @PathVariable String bookTitle
     ) {
         List<Book> bookList = bookService.findBooksByTitle(bookTitle);
-        List<BookResponseDTO> bookResponseDTOList = bookList.stream().map(Book::convertToResponseDTO).toList();
+        List<BookResponseDTO> bookResponseDTOList = bookList.stream().map(book ->
+            new BookResponseDTO().buildResponseDtoFromEntity(book)
+        ).toList();
         return ResponseEntity.status(HttpStatus.OK).body(bookResponseDTOList);
     }
 
@@ -57,9 +62,11 @@ public class LibraryController {
         @Valid @RequestBody BookRequestDTO bookRequestDTO,
         @PathVariable Long bookID
     ) throws NotFoundException {
-        Book book = bookRequestDTO.convertToEntity();
-        Book bookToUpdate = bookService.updateBookByID(bookID, book);
-        return ResponseEntity.status(HttpStatus.OK).body(bookToUpdate.convertToResponseDTO());
+        Book bookToUpdate = bookService.updateBookByID(bookID, bookRequestDTO.convertToEntity());
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+            new BookResponseDTO().buildResponseDtoFromEntity(bookToUpdate)
+        );
     }
 
     @PutMapping("/book/{bookID}/rate_book")
@@ -87,5 +94,10 @@ public class LibraryController {
     ) throws NotFoundException, BadRequestException {
         bookService.deleteCopiesOfBookFromStock(quantity, bookID);
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @GetMapping("/auth_token")
+    public ResponseEntity<String> getTokenJwt(@AuthenticationPrincipal OidcUser principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(principal.getIdToken().getTokenValue());
     }
 }

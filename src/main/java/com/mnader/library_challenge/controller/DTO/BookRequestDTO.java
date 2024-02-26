@@ -1,4 +1,4 @@
-package com.mnader.library_challenge.model.DTO;
+package com.mnader.library_challenge.controller.DTO;
 
 import com.mnader.library_challenge.model.Book;
 import jakarta.validation.constraints.*;
@@ -25,12 +25,12 @@ public class BookRequestDTO {
     private Integer stock;
 
     public Book convertToEntity() {
-       return Book.builder()
-           .title(this.title)
-           .author(this.author)
-           .isbn(this.isbn)
-           .price(this.price)
-           .stock(this.stock)
-           .build();
+        return Book.builder()
+            .title(this.title)
+            .author(this.author)
+            .isbn(this.isbn)
+            .price(this.price)
+            .stock(this.stock)
+            .build();
     }
 }
